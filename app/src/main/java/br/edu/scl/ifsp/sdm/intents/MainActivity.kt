@@ -5,16 +5,17 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import br.edu.scl.ifsp.sdm.intents.Extras.PARAMETER_EXTRA
 import br.edu.scl.ifsp.sdm.intents.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
-    companion object {
-        private const val PARAMETER_REQUEST_CODE = 0
-    }
     private val activityMainBinding: ActivityMainBinding by lazy {
         ActivityMainBinding.inflate(layoutInflater)
     }
+
+    private lateinit var parameterArl: ActivityResultLauncher<Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,21 +23,21 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(activityMainBinding.toolbarIn.toolbar)
         supportActionBar?.subtitle = localClassName
 
+
+        parameterArl = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                    result.data?.getStringExtra(PARAMETER_EXTRA)?.also {
+                       activityMainBinding.parameterTv.text = it
+                    }
+            }
+        }
+
         activityMainBinding.apply {
             parameterBt.setOnClickListener {
                 val parameterIntent = Intent(this@MainActivity, ParameterActivity::class.java).apply {
                     putExtra(PARAMETER_EXTRA, parameterTv.text)
                 }
-                startActivityForResult(parameterIntent, PARAMETER_REQUEST_CODE)
-            }
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == PARAMETER_REQUEST_CODE && resultCode == RESULT_OK) {
-            data?.getStringExtra(PARAMETER_EXTRA)?.also {
-                activityMainBinding.parameterTv.text = it
+                parameterArl.launch(parameterIntent)
             }
         }
     }
